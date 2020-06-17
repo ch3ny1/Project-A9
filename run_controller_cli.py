@@ -198,7 +198,7 @@ async def _main(args):
         # Efficient MP Credit Farming Algorithm
         async def _farm_start():
             """
-            test_buttons - Navigates to the "Test Controller Buttons" menu and presses all buttons.
+            start_farming() - Auto decide to run or quit.
             """
             await farmInt(controller_state)
 
