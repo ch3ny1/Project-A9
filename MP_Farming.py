@@ -64,7 +64,7 @@ async def time2run(loaded=False, waiting2quit=False):
 
     if (not ret) or (not cv.absdiff(frame,missed_frame).any()):
         print("Skipped a frame")
-        await time2run(loaded, waiting2quit)
+        return await time2run(loaded, waiting2quit)
     else:
         
         Pos_1 = frame[220:228, 280:288, 0:3]
@@ -74,16 +74,18 @@ async def time2run(loaded=False, waiting2quit=False):
 
         if loading:
             if loaded and waiting2quit:
-                print('Waiting for getting in.')
-                await time2run(True, True)
+                print('Cant wait to run!')
+                await asyncio.sleep(2)
+                return await time2run(True, True)
             elif cv.absdiff(Pos_2, bckgrd).any():
-                print('Too many people. Better run.')
-                await time2run(True, True)
+                print('\Too many people. Better run.')
+                await asyncio.sleep(3)
+                return await time2run(True, True)
             else:
                 print('Nice round!')
                 count_played+=1
-                await time2run(True, False)
-        elif loaded and waiting2quit:
+                return False
+        elif waiting2quit:
             count_quitted+=1
             return True
         else:
@@ -138,9 +140,9 @@ async def farmInt(controller_state: ControllerState):
                 break
 
         else:
-            print('Escaping')
+            print('Outta here')
             await running(controller_state)
-            print('Run away and starting again')
+            print('Run away and start again')
             count_quitted += 1
 
 
