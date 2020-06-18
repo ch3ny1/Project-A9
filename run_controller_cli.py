@@ -15,7 +15,7 @@ from joycontrol.controller_state import ControllerState, button_push
 from joycontrol.memory import FlashMemory
 from joycontrol.protocol import controller_protocol_factory
 from joycontrol.server import create_hid_server
-from MP_Farming import farmInt
+from MP_Farming import *
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +198,7 @@ async def _main(args):
         # Efficient MP Credit Farming Algorithm
         async def _farm_start():
             """
-            test_buttons - Navigates to the "Test Controller Buttons" menu and presses all buttons.
+            start_farming() - Auto decide to run or quit.
             """
             await farmInt(controller_state)
 
