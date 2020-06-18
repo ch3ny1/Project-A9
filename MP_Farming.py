@@ -13,10 +13,13 @@ from joycontrol.server import create_hid_server
 import numpy as np
 import cv2 as cv
 from matplotlib import pyplot as plt
-indicator_entering = cv.imread('indicator.ppm')
-checker_exit = cv.imread('checker.ppm')
-checker_gray = cv.cvtColor(checker_exit, cv.COLOR_BGR2GRAY)
-time2run = False
+#indicator_entering = cv.imread('indicator.ppm')
+#checker_exit = cv.imread('checker.ppm')
+redflag = cv.imread('redFlag.ppm')
+bckgrd = cv.imread('none.ppm')
+missed_frame = cv.imread('missed.ppm')
+
+#time2run = False
 count_played = 0
 count_quitted = 0
 
@@ -41,54 +44,106 @@ async def farm(controller_state: ControllerState):
     #await asyncio.sleep(1)
 
 
-async def is_loading():
-    global time2run
+
+"""
+def is_loading(loaded=False, waiting2quit=False, checked=checker_exit):
+    #global time2run
     global count_played
 
-    waiting2quit = False
-    loaded = False
-    while True:
-        ret, frame = cap.read()
+    ret, frame = cap.read()
 
-        if not ret:
-            print("Can't receive frame")
+    if not ret:
+        print("Can't receive frame")
 
-        indicator = frame[575:595,960:990,0:3]
-        cv.imshow('indicator', indicator)
-        checker = frame[750:770, 1310:1340,0:3]
-        cv.imshow('checker',checker)
+    indicator = frame[575:595, 960:990,0:3]
+    #cv.imshow('indicator', indicator)
+    
 
-        loading = not cv.absdiff(indicator_entering,indicator).any()
-
-        if loading:
-            loaded = True
-            if waiting2quit:
-                continue
-            elif cv.absdiff(checker_gray,cv.cvtColor(checker, cv.COLOR_BGR2GRAY)).any():
-                waiting2quit = True
-                print('Too many players. Better run.')
-                continue
-        elif waiting2quit:
-            time2run = True
-            break
-        elif loaded:
+    loading = not cv.absdiff(indicator_entering,indicator).any()
+    
+    if loading:
+        if not loaded:
             count_played += 1
-            break
-        else:
-            break
+            is_loading(True, False, frame[750:770, 1310:1340,0:3])
+        elif waiting2quit:
+            checker = checked
+            is_loading(True, True, checker)
+        elif cv.absdiff(frame[750:770, 1310:1340,0:3],checked).any():
+            print('Too many players. Better run.')
+            is_loading(True, True)
+    elif waiting2quit:
+        #time2run = True
+        return True
+
+    else:
+        return False
+"""
 
 async def running(controller_state: ControllerState):
     await asyncio.sleep(0.5)
     await button_push(controller_state, 'plus',sec=0.1)
     await asyncio.sleep(1.5)
-    await button_push(controller_state, 'down', sec=2.5)
+    await button_push(controller_state, 'down', sec=1.5)
     await asyncio.sleep(0.5)
     await button_push(controller_state, 'a',sec=0.1)
-    await asyncio.sleep(4)
+    await asyncio.sleep(5)
 
+
+async def time2run(loaded=False, waiting2quit=False):
+    global count_played
+    global count_quitted
+
+    ret, frame = cap.read()
+
+    if (not ret) or (not cv.absdiff(frame,missed_frame).any()):
+        print("Can't receive frame")
+        return await time2run(loaded, waiting2quit)
+    else:
+        
+        Pos_1 = frame[220:228, 280:288, 0:3]
+        Pos_2 = frame[730:736, 992:998, 0:3]
+        
+        loading = not cv.absdiff(Pos_1, redflag).any()
+        if loading:
+            if cv.absdiff(Pos_2, bckgrd).any():
+                print('Too many people. Better run.')
+                return await time2run(True, True)
+            else:
+                return await time2run(True, False)
+        elif loaded:
+            if waiting2quit:
+                count_quitted+=1
+            else:
+                count_played+=1
+            return True
+        else:
+            return False
+        
+        
+    
+"""    
+    if loading:
+        if not loaded:
+            #count_played += 1
+            await time2run(True, False)
+        elif waiting2quit:
+            checker = checked
+            await time2run(True, True)
+        elif cv.absdiff(frame[730:736, 992:998, 0:3],cond).any():
+            print('Too many players. Better run.')
+            await time2run(True, True)
+    elif waiting2quit:
+        #time2run = True
+        return True
+
+    else:
+        return False
+"""        
+        
+        
 
 async def farmInt(controller_state: ControllerState):
-    global time2run
+    #global time2run
     global cap
     global count_quitted
     global count_played
@@ -100,22 +155,21 @@ async def farmInt(controller_state: ControllerState):
     )
 
     while not user_input.done():
-        
+        if not farming:
+            cap.release()
+            cv.destroyAllWindows()
+            break
 
-        while not time2run:
+        while not await time2run():
             await farm(controller_state)
-            await is_loading()
+            
             if user_input.done():
                 farming = False
                 break
-            
-        if not farming:
-            break
 
-        if time2run:
+        else:
             print('Escaping')
             await running(controller_state)
-            time2run = False
             print('Run away and starting again')
             count_quitted += 1
 
@@ -124,7 +178,7 @@ async def farmInt(controller_state: ControllerState):
     print('Played: ' + str(count_played))
     print('Quitted: ' + str(count_quitted))
 
-    cap.release()
-    cv.destroyAllWindows()
+    #cap.release()
+    #cv.destroyAllWindows()
     await user_input
     
