@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Asphalt 9 Nintendo Switch Farming Script
+# Chenyi Wang
 import asyncio
 
 from aioconsole import ainput
@@ -13,13 +15,12 @@ from joycontrol.server import create_hid_server
 import numpy as np
 import cv2 as cv
 from matplotlib import pyplot as plt
-#indicator_entering = cv.imread('indicator.ppm')
-#checker_exit = cv.imread('checker.ppm')
+
+# Pre-load Critical Pixels for Recognition
 redflag = cv.imread('redFlag.ppm')
 bckgrd = cv.imread('none.ppm')
 missed_frame = cv.imread('missed.ppm')
 
-#time2run = False
 count_played = 0
 count_quitted = 0
 
@@ -28,6 +29,8 @@ if not cap.isOpened():
     print("Cannot open camera")
     exit()
 
+    
+# Run-time operation script
 async def farm(controller_state: ControllerState):
     #await button_push(controller_state, 'zr', sec=0.1)
     #await asyncio.sleep(0.2)
@@ -45,7 +48,7 @@ async def farm(controller_state: ControllerState):
 
 
 
-
+# Exit script
 async def running(controller_state: ControllerState):
     await asyncio.sleep(0.5)
     await button_push(controller_state, 'plus',sec=0.1)
@@ -55,7 +58,7 @@ async def running(controller_state: ControllerState):
     await button_push(controller_state, 'a',sec=0.1)
     await asyncio.sleep(3)
 
-
+# Capture and detect frames. Return boolean
 async def time2run(loaded=False, waiting2quit=False):
     global count_played
     global count_quitted
@@ -94,29 +97,8 @@ async def time2run(loaded=False, waiting2quit=False):
     return False
 
 
-"""
-    if loading:
-        if not loaded:
-            #count_played += 1
-            await time2run(True, False)
-        elif waiting2quit:
-            checker = checked
-            await time2run(True, True)
-        elif cv.absdiff(frame[730:736, 992:998, 0:3],cond).any():
-            print('Too many players. Better run.')
-            await time2run(True, True)
-    elif waiting2quit:
-        #time2run = True
-        return True
-
-    else:
-        return False
-"""
-
-
-
+# Initialize farming
 async def farmInt(controller_state: ControllerState):
-    #global time2run
     global cap
     global count_quitted
     global count_played
@@ -151,6 +133,4 @@ async def farmInt(controller_state: ControllerState):
     print('Played: ' + str(count_played))
     print('Quitted: ' + str(count_quitted))
 
-    #cap.release()
-    #cv.destroyAllWindows()
     await user_input
